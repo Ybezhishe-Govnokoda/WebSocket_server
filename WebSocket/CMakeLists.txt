@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # =======================
 add_library(WebSocket SHARED
     src/ws_client.cpp
+    src/ws_server.cpp
     src/ws_api.cpp
 )
 
@@ -32,6 +33,22 @@ target_link_libraries(test_client
 )
 
 target_include_directories(test_client
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# =======================
+# TEST SERVER (EXE)
+# =======================
+add_executable(test_server
+    tests/test_server.cpp
+)
+
+target_link_libraries(test_server
+    PRIVATE WebSocket
+)
+
+target_include_directories(test_server
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )

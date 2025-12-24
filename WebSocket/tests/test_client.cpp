@@ -14,16 +14,16 @@ void on_error(int code, const char *text) {
 }
 
 int main() {
-   ws_handle_t h = ws_create();
+   ws_handle_t h = ws_client_create();
 
-   ws_set_on_connected(h, on_connected);
-   ws_set_on_message(h, on_message);
-   ws_set_on_error(h, on_error);
+   ws_client_set_on_connected(h, on_connected);
+   ws_client_set_on_message(h, on_message);
+   ws_client_set_on_error(h, on_error);
 
-   ws_connect(h, "localhost:9002", "test_token");
+   ws_client_connect(h, "localhost:9002", "test_token");
 
    std::cin.get();
 
-   ws_disconnect(h);
-   ws_destroy(h);
+   ws_client_disconnect(h);
+   ws_client_destroy(h);
 }
