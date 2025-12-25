@@ -1,5 +1,6 @@
 #include "ws_api.h"
 #include <iostream>
+#include <string>
 
 void on_connected(int c) {
    std::cout << "Connected: " << c << "\n";
@@ -22,7 +23,11 @@ int main() {
 
    ws_client_connect(h, "localhost:9002", "test_token");
 
-   std::cin.get();
+	std::cout << "Enter messages to send to the server. Ctrl+D to exit.\n";
+   std::string line;
+   while (std::getline(std::cin, line)) {
+      ws_client_send(h, line.c_str());
+   }
 
    ws_client_disconnect(h);
    ws_client_destroy(h);

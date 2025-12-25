@@ -18,6 +18,8 @@ public:
    int connect(const std::string &url, const std::string &token);
    void disconnect();
 
+   bool send(const std::string &msg);
+
    std::function<void(bool)> on_connected;
    std::function<void(const std::string &)> on_message;
    std::function<void(int, const std::string &)> on_error;

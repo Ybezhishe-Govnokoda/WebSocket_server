@@ -81,12 +81,26 @@ void WsServer::accept_ws(std::shared_ptr<Client> client) {
 void WsServer::do_read(std::shared_ptr<Client> client) {
    client->ws.async_read(client->buffer,
       [this, client](beast::error_code ec, std::size_t bytes) {
-         if (ec) return handle_disconnect(client, ec);
+         if (ec) {
+            handle_disconnect(client, ec);
+            return;
+         }
 
          std::string msg = beast::buffers_to_string(client->buffer.data());
          client->buffer.consume(bytes);
 
-         if (on_message_) on_message_(client->id, msg);
+         if (on_message_)
+            on_message_(client->id, msg);
+
+			// Echo the message back to the client
+         auto out = std::make_shared<std::string>(msg);
+
+         client->ws.text(true);
+         client->ws.async_write(
+            boost::asio::buffer(*out),
+            [out](beast::error_code, std::size_t) {
+            });
+
          do_read(client);
       });
 }

@@ -118,3 +118,17 @@ void WsClient::disconnect() {
    if (io_thread_.joinable())
       io_thread_.join();
 }
+
+bool WsClient::send(const std::string &msg) {
+   if (!connected_) return false;
+
+   try {
+      ws_.write(boost::asio::buffer(msg));
+      return true;
+   }
+   catch (const std::exception &e) {
+      if (on_error)
+         on_error(-3, e.what());
+      return false;
+   }
+}

@@ -29,6 +29,9 @@ extern "C" {
       const char *bearer_token);
    WS_API void ws_client_disconnect(ws_handle_t h);
 
+	/* send message */
+   WS_API int ws_client_send(ws_handle_t h, const char *msg);
+
    /* callbacks registration */
    WS_API void ws_client_set_on_connected(ws_handle_t h, ws_on_connected_cb cb);
    WS_API void ws_client_set_on_message(ws_handle_t h, ws_on_message_cb cb);
