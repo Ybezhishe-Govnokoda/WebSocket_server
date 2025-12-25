@@ -45,12 +45,12 @@ target_link_libraries(ws_gui_client
         Qt6::Widgets
 )
 
-# TEST SERVER
-add_executable(test_server
-    tests/test_server.cpp
+# SERVER
+add_executable(server
+    src/server.cpp
 )
 
-target_link_libraries(test_server
+target_link_libraries(server
     PRIVATE
         WebSocket
 )
