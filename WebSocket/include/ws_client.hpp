@@ -5,26 +5,39 @@
 #include <functional>
 #include <string>
 
+using tcp = boost::asio::ip::tcp;
+namespace asio = boost::asio;
+namespace beast = boost::beast;
+namespace websocket = beast::websocket;
+
 class WsClient {
 public:
    WsClient();
    ~WsClient();
 
-   bool connect(const std::string &url, const std::string &token);
+   int connect(const std::string &url, const std::string &token);
    void disconnect();
 
-   /* callbacks (C++) */
    std::function<void(bool)> on_connected;
    std::function<void(const std::string &)> on_message;
    std::function<void(int, const std::string &)> on_error;
 
 private:
-   void read_loop();
-
-   boost::asio::io_context ioc_;
-   boost::asio::ip::tcp::resolver resolver_;
-   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
+   asio::io_context ioc_;
+   tcp::resolver resolver_;
+   websocket::stream<tcp::socket> ws_;
+   asio::steady_timer ping_timer_;
+   asio::steady_timer pong_timeout_;
 
    std::thread io_thread_;
    bool connected_{ false };
+
+   std::string last_url_;
+   std::string last_token_;
+   int reconnect_delay_{ 1 };
+
+   void do_connect();
+   void do_read();
+   void start_ping();
+   void schedule_reconnect();
 };

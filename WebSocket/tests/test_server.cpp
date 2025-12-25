@@ -18,18 +18,17 @@ void on_error(int code, const char *text) {
 }
 
 int main() {
-   auto server = ws_server_create();
+   auto s = ws_server_create();
 
-   ws_server_set_on_client_connected(server, on_connect);
-   ws_server_set_on_client_disconnected(server, on_disconnect);
-   ws_server_set_on_message(server, on_message);
-   ws_server_set_on_error(server, on_error);
+   ws_server_set_on_client_connected(s, on_connect);
+   ws_server_set_on_client_disconnected(s, on_disconnect);
+   ws_server_set_on_message(s, on_message);
+   ws_server_set_on_error(s, on_error);
 
-   ws_server_start(server, 9002);
+   ws_server_start(s, 9002);
 
-   std::cout << "Server running. Press Enter to stop...\n";
    std::cin.get();
 
-   ws_server_stop(server);
-   ws_server_destroy(server);
+   ws_server_stop(s);
+   ws_server_destroy(s);
 }

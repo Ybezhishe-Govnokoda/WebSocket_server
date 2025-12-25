@@ -104,5 +104,4 @@ extern "C" {
       WS_API void ws_server_set_on_error(ws_server_handle_t h, ws_server_on_error_cb cb) {
          static_cast<ws_server_wrapper *>(h)->on_error = cb;
       }
-
 }
