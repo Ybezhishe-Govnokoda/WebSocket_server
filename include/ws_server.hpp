@@ -47,6 +47,7 @@ private:
       websocket::stream<tcp::socket> ws;
       beast::flat_buffer buffer;
       asio::steady_timer ping_timer;
+      std::atomic<bool> closed{false};
 
       explicit Client(tcp::socket socket);
    };

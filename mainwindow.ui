@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>WebSocket Client</string>
+  </property>
+
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+
+    <!-- Log window -->
+    <item>
+     <widget class="QTextEdit" name="logView">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+
+<!-- Message send row -->
+   <item>
+    <widget class="QLineEdit" name="messageEdit">
+     <property name="placeholderText">
+      <string>Enter message...</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="sendBtn">
+     <property name="text">
+      <string>Send</string>
+     </property>
+    </widget>
+   </item>
+
+    <!-- Host -->
+    <item>
+     <widget class="QLineEdit" name="hostEdit">
+      <property name="placeholderText">
+       <string>Host (e.g. localhost:9002)</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- Token -->
+    <item>
+     <widget class="QLineEdit" name="tokenEdit">
+      <property name="placeholderText">
+       <string>Bearer token</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- Connect button -->
+    <item>
+     <widget class="QPushButton" name="connectBtn">
+      <property name="text">
+       <string>Connect</string>
+      </property>
+     </widget>
+    </item>
+
+   </layout>
+  </widget>
+
+  <widget class="QMenuBar" name="menubar"/>
+  <widget class="QStatusBar" name="statusbar"/>
+
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+

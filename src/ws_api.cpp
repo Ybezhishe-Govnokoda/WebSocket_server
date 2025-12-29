@@ -1,11 +1,11 @@
-﻿#define WS_DLL_EXPORTS
+﻿//#define WS_DLL_EXPORTS
 #include "ws_api.h"
 #include "ws_client.hpp"
 #include "ws_server.hpp"
 
 extern "C" {
 
-   /* ========= CLIENT =========*/
+   // Client
 
    ws_handle_t ws_client_create() {
       return new WsClient();
@@ -48,7 +48,7 @@ extern "C" {
          };
    }
 
-   /* ========= SERVER =========*/
+   // Server
 
    struct ws_server_wrapper {
       WsServer server;

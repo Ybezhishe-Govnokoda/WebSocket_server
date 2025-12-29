@@ -119,9 +119,14 @@ void WsServer::start_ping(std::shared_ptr<Client> client) {
 }
 
 void WsServer::handle_disconnect(std::shared_ptr<Client> client, beast::error_code ec) {
-   if (on_client_disconnected_)
-      on_client_disconnected_(client->id);
+    bool expected = false;
+    if (!client->closed.compare_exchange_strong(expected, true)) {
+        return;
+    }
 
-   std::lock_guard<std::mutex> lock(clients_mutex_);
-   clients_.erase(client->id);
+    if (on_client_disconnected_)
+        on_client_disconnected_(client->id);
+
+    std::lock_guard<std::mutex> lock(clients_mutex_);
+    clients_.erase(client->id);
 }
