@@ -25,6 +25,9 @@ set(WEBSOCKET_HEADERS
 )
 
 set(WEBSOCKET_SOURCES
+    src/ws_api.cpp
+    src/ws_client.cpp
+    src/ws_server.cpp
     src/wss_api.cpp
     src/wss_client.cpp
     src/wss_server.cpp
@@ -56,15 +59,6 @@ target_include_directories(WebSocket
 # Server
 add_executable(server
     src/server.cpp
-)
-
-# Tests WSS
-add_executable(test_server_wss
-    tests/test_server_wss.cpp
-)
-
-add_executable(test_client_wss
-    tests/test_client_wss.cpp
 )
 
 # ========================================
@@ -150,16 +144,6 @@ if (WIN32)
     #)
 
     target_link_libraries(server PRIVATE
-        WebSocket
-        ${WINDOWS_LIBS}
-    )
-
-    target_link_libraries(test_server_wss PRIVATE
-        WebSocket
-        ${WINDOWS_LIBS}
-    )
-
-    target_link_libraries(test_client_wss PRIVATE
         WebSocket
         ${WINDOWS_LIBS}
     )
