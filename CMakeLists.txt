@@ -63,7 +63,7 @@ add_executable(server
 )
 
 # ========================================
-# TESTS WS
+# TESTS
 # ========================================
 add_library(TEST SHARED
     src/ws_api.cpp

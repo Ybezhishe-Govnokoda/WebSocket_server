@@ -68,6 +68,7 @@ void QtWsClient::connectToServer(const QString &url, const QString &token) {
 void QtWsClient::disconnectFromServer() {
     emit log("Disconnect requested");
     destroyHandle();
+    emit connected(false);
 }
 
 void QtWsClient::sendMessage(const QString &msg) {

@@ -24,6 +24,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QtWsClient client_;
+
     bool connected_ = false;
 };
 
