@@ -1,7 +1,6 @@
-//#include "ws_api.h"
+#include "wss_api.h"
 #include <iostream>
 
-/*
 void on_connect(const char *id) {
     std::cout << "[CONNECT] " << id << "\n";
 }
@@ -17,17 +16,16 @@ void on_message(const char *id, const char *msg) {
 void on_error(int code, const char *text) {
     std::cout << "[ERROR] " << code << ": " << text << "\n";
 }
-*/
 
 int main() {
-    std::cout << "WS Server\n";
-    /*
-    auto ws = ws_server_create();
+    std::cout << "WSS Server" << std::endl;
+    // wss init
+    auto wss = wss_server_create();
 
-    ws_server_set_on_client_connected(ws, on_connect);
-    ws_server_set_on_client_disconnected(ws, on_disconnect);
-    ws_server_set_on_message(ws, on_message);
-    ws_server_set_on_error(ws, on_error);
+    wss_server_set_on_client_connected(wss, on_connect);
+    wss_server_set_on_client_disconnected(wss, on_disconnect);
+    wss_server_set_on_message(wss, on_message);
+    wss_server_set_on_error(wss, on_error);
 
     // SERVER START
     // 9002 - for wss://
@@ -36,12 +34,10 @@ int main() {
     // wss://localhost:9002
     // ws://localhost:9003
 
-    ws_server_start(ws, 9003);
+    wss_server_start(wss, 9002);
 
     std::cin.get();
 
-    ws_server_stop(ws);
-    ws_server_destroy(ws);
-    */
+    wss_server_stop(wss);
+    wss_server_destroy(wss);
 }
-
