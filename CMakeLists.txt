@@ -5,11 +5,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Qt
-#set(CMAKE_AUTOMOC ON)
-#set(CMAKE_AUTOUIC ON)
-#set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
-#find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 # OpenSSL (MinGW)
 set(OPENSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/openssl-mingw/usr/local)
@@ -47,14 +47,15 @@ target_include_directories(WebSocket
         ${OPENSSL_INCLUDE_DIR}
 )
 
-# GUI Client
-#add_executable(ws_gui_client
-#    main.cpp
-#    mainwindow.cpp
-#    mainwindow.hc
-#    mainwindow.ui
-#    src/qt_ws_client.cpp
-#)
+#GUI Client
+add_executable(ws_gui_client
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
+    src/qt_ws_client.cpp
+    include/qt_ws_client.hpp
+)
 
 # Server
 add_executable(server
@@ -137,11 +138,11 @@ if (WIN32)
         ${WINDOWS_LIBS}
     )
 
-    #target_link_libraries(ws_gui_client PRIVATE
-    #    WebSocket
-    #    Qt6::Widgets
-    #    ${WINDOWS_LIBS}
-    #)
+    target_link_libraries(ws_gui_client PRIVATE
+        WebSocket
+        Qt6::Widgets
+        ${WINDOWS_LIBS}
+    )
 
     target_link_libraries(server PRIVATE
         WebSocket
@@ -152,10 +153,10 @@ else()
         Qt6::Widgets
         ${OPENSSL_LIBRARIES}
     )
-    #target_link_libraries(ws_gui_client PRIVATE
-    #    WebSocket
-    #    Qt6::Widgets
-    #)
+    target_link_libraries(ws_gui_client PRIVATE
+        WebSocket
+        Qt6::Widgets
+    )
 
     target_link_libraries(server PRIVATE
         WebSocket

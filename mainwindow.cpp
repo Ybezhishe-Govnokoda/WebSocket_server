@@ -18,6 +18,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->sendBtn, &QPushButton::clicked,
             this, &MainWindow::onSendClicked);
+
+    connect(&client_, &QtWsClient::messageReceived,
+            this, &MainWindow::onMessageReceived);
 }
 
 MainWindow::~MainWindow() {
@@ -25,13 +28,18 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::onConnectClicked() {
-    client_.connectToServer(
-        ui->hostEdit->text(),
-        ui->tokenEdit->text()
-        );
+    if (!connected_) {
+        client_.connectToServer(
+            ui->hostEdit->text(),
+            ui->tokenEdit->text()
+            );
+    } else {
+        client_.disconnectFromServer();
+    }
 }
 
 void MainWindow::onConnected(bool ok) {
+    connected_ = ok;
     ui->connectBtn->setText(ok ? "Disconnect" : "Connect");
 }
 
@@ -48,4 +56,6 @@ void MainWindow::onSendClicked() {
     ui->messageEdit->clear();
 }
 
-
+void MainWindow::onMessageReceived(QString text) {
+    ui->logView->append("[SERVER] " + text);
+}

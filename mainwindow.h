@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
-#include "qt_ws_client.h"
+#include "qt_ws_client.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -14,14 +14,16 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:
+private slots:    
     void onConnectClicked();
     void onConnected(bool ok);
+    void onMessageReceived(QString text);
     void onLog(QString text);
     void onSendClicked();
 
 private:
     Ui::MainWindow *ui;
     QtWsClient client_;
+    bool connected_ = false;
 };
 
