@@ -48,7 +48,7 @@ target_include_directories(WebSocket
 )
 
 #GUI Client
-add_executable(ws_gui_client
+add_executable(ws_gui_client WIN32
     main.cpp
     mainwindow.cpp
     mainwindow.h
