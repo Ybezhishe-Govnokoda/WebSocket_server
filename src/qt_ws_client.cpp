@@ -21,12 +21,12 @@ void QtWsClient::connectToServer(const QString &url, const QString &token) {
     if (url.startsWith("wss://")) {
         mode_ = WsMode::WSS;
         cleanUrl = url.mid(6);
-        emit log("Using WSS");
+        emit log("Using WSS, loading cacert.pem");
     }
     else if (url.startsWith("ws://")) {
         mode_ = WsMode::WS;
         cleanUrl = url.mid(5);
-        emit log("Using WS");
+        emit log("Using WS, loading cacert.pem");
     }
     else {
         emit errorOccurred(-1, "Invalid URL scheme");

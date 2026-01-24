@@ -22,6 +22,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&client_, &QtWsClient::messageReceived,
             this, &MainWindow::onMessageReceived);
 
+    connect(&client_, &QtWsClient::errorOccurred,
+            this, &MainWindow::onError);
+
     // Connection inputs
     ui->hostEdit->setVisible(!connected_);
     ui->tokenEdit->setVisible(!connected_);
@@ -79,5 +82,11 @@ void MainWindow::onSendClicked() {
 
 void MainWindow::onMessageReceived(QString text) {
     ui->logView->append("[SERVER] " + text);
+}
+
+void MainWindow::onError(int code, QString text) {
+    ui->logView->append(
+        QString("[ERROR %1] %2").arg(code).arg(text)
+        );
 }
 

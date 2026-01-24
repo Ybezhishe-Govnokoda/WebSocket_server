@@ -14,7 +14,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:    
+private slots:
+    void onError(int code, QString text);
     void onConnectClicked();
     void onConnected(bool ok);
     void onMessageReceived(QString text);

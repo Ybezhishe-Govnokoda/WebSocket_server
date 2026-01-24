@@ -14,6 +14,12 @@ namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 namespace ssl = boost::asio::ssl;
 
+struct ParsedUrl {
+    std::string host;
+    std::string port;
+    std::string path;
+};
+
 class WssClient {
 public:
     WssClient();
@@ -43,10 +49,11 @@ private:
     std::thread io_thread_;
     bool connected_{ false };
 
-    std::string last_url_; // *
-    std::string last_token_; // *
+    std::string last_url_;
+    std::string last_token_;
     int reconnect_delay_{ 1 };
 
+    ParsedUrl parse_ws_url(const std::string& url, bool is_wss);
     void do_connect();
     void do_read();
     void start_ping();

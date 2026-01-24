@@ -1,5 +1,4 @@
 #include "wss_client.hpp"
-#include <iostream>
 
 WssClient::WssClient()
     : strand_(asio::make_strand(ioc_)),
@@ -23,47 +22,137 @@ int WssClient::connect(const std::string &url, const std::string &token) {
     return 0;
 }
 
+ParsedUrl WssClient::parse_ws_url(const std::string &url, bool is_wss) {
+    ParsedUrl result;
+
+    std::string work = url;
+
+    // path
+    auto path_pos = work.find('/');
+    if (path_pos != std::string::npos) {
+        result.path = work.substr(path_pos);
+        work = work.substr(0, path_pos);
+    }
+    else {
+        result.path = "/";
+    }
+
+    // port
+    auto port_pos = work.find(':');
+    if (port_pos != std::string::npos) {
+        result.host = work.substr(0, port_pos);
+        result.port = work.substr(port_pos + 1);
+    }
+    else {
+        result.host = work;
+        result.port = is_wss ? "443" : "80";
+    }
+
+    return result;
+}
+
 void WssClient::do_connect() {
     asio::dispatch(strand_, [this] {
-        auto pos = last_url_.find(':');
-        auto host = last_url_.substr(0, pos);
-        auto port = last_url_.substr(pos + 1);
+        ParsedUrl parsed = parse_ws_url(last_url_, true);
 
         resolver_.async_resolve(
-            host, port,
+            parsed.host,
+            parsed.port,
             asio::bind_executor(strand_,
-                [this, host](auto ec, auto results) {
-                    if (ec) return schedule_reconnect();
+                [this, parsed](auto ec, auto results) {
+                    if (ec) {
+                        if (on_error)
+                            on_error(ec.value(), "Resolve failed: " + ec.message());
+                        return schedule_reconnect();
+                    }
+                    if (on_error)
+                        on_error(0, "Resolve OK");
 
-                    ssl_ctx_.set_verify_mode(ssl::verify_none);
+                    ssl_ctx_.set_default_verify_paths();
+                    ssl_ctx_.set_verify_mode(ssl::verify_peer);
+                    ssl_ctx_.load_verify_file("cacert.pem");
+
                     wss_ = std::make_unique<
                         websocket::stream<ssl::stream<tcp::socket>>
                         >(strand_, ssl_ctx_);
 
+                    if (on_error) on_error(0, "TCP connecting...");
                     asio::async_connect(
                         wss_->next_layer().next_layer(), results,
                         asio::bind_executor(strand_,
-                            [this, host](auto ec, auto) {
-                                if (ec) return schedule_reconnect();
+                            [this, parsed](auto ec, auto) {
 
-                                wss_->next_layer().async_handshake(
-                                    ssl::stream_base::client,
-                                    asio::bind_executor(strand_,
-                                        [this, host](auto ec) {
-                                            if (ec) return schedule_reconnect();
+                            if (ec) {
+                                if (on_error)
+                                    on_error(ec.value(),
+                                    "TCP connect failed: " + ec.message());
+                                return schedule_reconnect();
+                            }
+                            if (on_error)
+                                on_error(0, "TCP connected");
 
-                                            wss_->async_handshake(
-                                                host, "/",
-                                                asio::bind_executor(strand_,
-                                                    [this](auto ec) {
-                                                        if (ec) return schedule_reconnect();
-                                                        connected_ = true;
-                                                        reconnect_delay_ = 1;
-                                                        if (on_connected) on_connected(true);
-                                                        start_ping();
-                                                        do_read();
-                                                    }));
-                                        }));
+                            if (!SSL_set_tlsext_host_name(
+                                    wss_->next_layer().native_handle(),
+                                    parsed.host.c_str()))
+                            {
+                                beast::error_code ec{
+                                    static_cast<int>(::ERR_get_error()),
+                                    asio::error::get_ssl_category()
+                                };
+                                if (on_error) on_error(ec.value(), ec.message());
+                                return schedule_reconnect();
+                            }
+
+                            wss_->set_option(websocket::stream_base::decorator(
+                                [this](websocket::request_type& req) {
+                                    req.set(beast::http::field::authorization,
+                                            "Bearer " + last_token_);
+                                    req.set(beast::http::field::sec_websocket_protocol, "bearer");
+                                }));
+
+                            if (on_error) on_error(0, "Setting SNI + SSL handshake");
+                            wss_->next_layer().async_handshake(
+                                ssl::stream_base::client,
+                                asio::bind_executor(strand_,
+                                    [this, parsed](auto ec) {
+                                        if (ec) {
+                                            if (on_error)
+                                                on_error(ec.value(),
+                                                         "SSL handshake failed: " +
+                                                             ec.message());
+                                            return schedule_reconnect();
+                                        }
+                                        if (on_error)
+                                            on_error(0, "SSL handshake OK");
+
+                                        auto res = std::make_shared<websocket::response_type>();
+                                        if (on_error)
+                                            on_error(0, "WS handshake starting");
+
+
+                                        wss_->async_handshake(
+                                            *res,
+                                            parsed.host,
+                                            parsed.path,
+                                            asio::bind_executor(strand_,
+                                                [this, res](auto ec) {
+                                                    if (ec) {
+                                                        if (on_error) {
+                                                            on_error(ec.value(),
+                                                                     "WS handshake failed: " + ec.message() +
+                                                                         "\nHTTP status: " + std::to_string(res->result_int()));
+                                                        }
+                                                        return schedule_reconnect();
+                                                    }
+                                                    if (on_error)
+                                                        on_error(0, "WS handshake OK");
+                                                    connected_ = true;
+                                                    reconnect_delay_ = 1;
+                                                    if (on_connected) on_connected(true);
+                                                    start_ping();
+                                                    do_read();
+                                                }));
+                                    }));
                             }));
 
                 }));
@@ -97,7 +186,11 @@ void WssClient::do_read() {
         *buffer,
         asio::bind_executor(strand_,
             [this, buffer](auto ec, auto) {
-                if (ec) return schedule_reconnect();
+                if (ec) {
+                    if (on_error) on_error(ec.value(), ec.message());
+                    return schedule_reconnect();
+                }
+
                 if (on_message)
                     on_message(beast::buffers_to_string(buffer->data()));
                 do_read();
@@ -120,7 +213,10 @@ void WssClient::schedule_reconnect() {
         reconnect_timer_.async_wait(
             asio::bind_executor(strand_,
                                 [this](auto ec) {
-                                    if (ec) return;
+                                    if (ec) {
+                                        if (on_error) on_error(ec.value(), ec.message());
+                                        return;
+                                    }
                                     reconnect_delay_ = std::min(reconnect_delay_ * 2, 10);
                                     do_connect();
                                 }));
