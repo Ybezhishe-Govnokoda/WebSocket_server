@@ -20,7 +20,7 @@ void QtWsClient::connectToServer(const QString &url, const QString &token) {
 
     if (url.startsWith("wss://")) {
         mode_ = WsMode::WSS;
-        cleanUrl = url;
+        cleanUrl = url.mid(6);
         emit log("Using WSS");
     }
     else if (url.startsWith("ws://")) {

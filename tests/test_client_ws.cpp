@@ -32,7 +32,7 @@ int main() {
 
     if (url.rfind("wss://", 0) == 0) {
         mode = WSS;
-        last_url = url;
+        last_url = url.substr(6);
         std::cout << "You choosed WSS" << std::endl;
     } else if (url.rfind("ws://", 0) == 0) {
         mode = WS;

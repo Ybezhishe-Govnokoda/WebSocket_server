@@ -14,11 +14,6 @@ namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 namespace ssl = boost::asio::ssl;
 
-enum class WsMode {
-    WS,
-    WSS
-};
-
 class WssClient {
 public:
     WssClient();
@@ -45,12 +40,11 @@ private:
     asio::steady_timer pong_timeout_;
     asio::steady_timer reconnect_timer_;
 
-    WsMode mode_{WsMode::WS};
     std::thread io_thread_;
     bool connected_{ false };
 
-    std::string last_url_;
-    std::string last_token_;
+    std::string last_url_; // *
+    std::string last_token_; // *
     int reconnect_delay_{ 1 };
 
     void do_connect();
