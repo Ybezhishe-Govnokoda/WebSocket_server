@@ -55,6 +55,7 @@ void WssClient::do_connect() {
     asio::dispatch(strand_, [this] {
         ParsedUrl parsed = parse_ws_url(last_url_, true);
 
+        // DNS resolve
         resolver_.async_resolve(
             parsed.host,
             parsed.port,
@@ -68,6 +69,7 @@ void WssClient::do_connect() {
                     if (on_error)
                         on_error(0, "Resolve OK");
 
+                    // TLS init
                     ssl_ctx_.set_default_verify_paths();
                     ssl_ctx_.set_verify_mode(ssl::verify_peer);
                     ssl_ctx_.load_verify_file("cacert.pem");
@@ -78,6 +80,7 @@ void WssClient::do_connect() {
 
                     if (on_error) on_error(0, "TCP connecting...");
                     asio::async_connect(
+                        //TCP connect (SYN -> SYN-ACK -> ACK)
                         wss_->next_layer().next_layer(), results,
                         asio::bind_executor(strand_,
                             [this, parsed](auto ec, auto) {
@@ -91,6 +94,7 @@ void WssClient::do_connect() {
                             if (on_error)
                                 on_error(0, "TCP connected");
 
+                            // Server name indication, checking cert
                             if (!SSL_set_tlsext_host_name(
                                     wss_->next_layer().native_handle(),
                                     parsed.host.c_str()))
@@ -103,6 +107,7 @@ void WssClient::do_connect() {
                                 return schedule_reconnect();
                             }
 
+                            // Adding http-headers (bearer, websocket-protocol)
                             wss_->set_option(websocket::stream_base::decorator(
                                 [this](websocket::request_type& req) {
                                     req.set(beast::http::field::authorization,
@@ -110,6 +115,7 @@ void WssClient::do_connect() {
                                     req.set(beast::http::field::sec_websocket_protocol, "bearer");
                                 }));
 
+                            // TLS handshake
                             if (on_error) on_error(0, "Setting SNI + SSL handshake");
                             wss_->next_layer().async_handshake(
                                 ssl::stream_base::client,
@@ -118,8 +124,8 @@ void WssClient::do_connect() {
                                         if (ec) {
                                             if (on_error)
                                                 on_error(ec.value(),
-                                                         "SSL handshake failed: " +
-                                                             ec.message());
+                                                "SSL handshake failed: " +
+                                                ec.message());
                                             return schedule_reconnect();
                                         }
                                         if (on_error)
@@ -130,6 +136,7 @@ void WssClient::do_connect() {
                                             on_error(0, "WS handshake starting");
 
 
+                                        // WS handshake (HTTP GET, Upgrade)
                                         wss_->async_handshake(
                                             *res,
                                             parsed.host,
@@ -139,16 +146,19 @@ void WssClient::do_connect() {
                                                     if (ec) {
                                                         if (on_error) {
                                                             on_error(ec.value(),
-                                                                     "WS handshake failed: " + ec.message() +
-                                                                         "\nHTTP status: " + std::to_string(res->result_int()));
+                                                            "WS handshake failed: " + ec.message() +
+                                                            "\nHTTP status: " + std::to_string(res->result_int()));
                                                         }
                                                         return schedule_reconnect();
                                                     }
                                                     if (on_error)
                                                         on_error(0, "WS handshake OK");
+
+                                                    // Successful connection
                                                     connected_ = true;
                                                     reconnect_delay_ = 1;
                                                     if (on_connected) on_connected(true);
+
                                                     start_ping();
                                                     do_read();
                                                 }));
@@ -160,6 +170,8 @@ void WssClient::do_connect() {
 }
 
 
+// Every 5 seconds check if connecton is alive
+// reconnect if not
 void WssClient::start_ping() {
     ping_timer_.expires_after(std::chrono::seconds(5));
     ping_timer_.async_wait(
@@ -179,6 +191,7 @@ void WssClient::start_ping() {
                 }));
 }
 
+// Reading frames, casting to string
 void WssClient::do_read() {
     auto buffer = std::make_shared<beast::flat_buffer>();
 
@@ -197,6 +210,7 @@ void WssClient::do_read() {
             }));
 }
 
+// Reconnect. Reset timers, wait delay then connect
 void WssClient::schedule_reconnect() {
     asio::dispatch(strand_, [this] {
         if (connected_) {
@@ -212,17 +226,18 @@ void WssClient::schedule_reconnect() {
 
         reconnect_timer_.async_wait(
             asio::bind_executor(strand_,
-                                [this](auto ec) {
-                                    if (ec) {
-                                        if (on_error) on_error(ec.value(), ec.message());
-                                        return;
-                                    }
-                                    reconnect_delay_ = std::min(reconnect_delay_ * 2, 10);
-                                    do_connect();
-                                }));
+                [this](auto ec) {
+                    if (ec) {
+                        if (on_error) on_error(ec.value(), ec.message());
+                        return;
+                    }
+                    reconnect_delay_ = std::min(reconnect_delay_ * 2, 10);
+                    do_connect();
+                }));
     });
 }
 
+// Closes the socket, stop io_contaxt join thread
 void WssClient::disconnect() {
     asio::post(ioc_, [this] {
         beast::error_code ec;
@@ -234,6 +249,7 @@ void WssClient::disconnect() {
     if (io_thread_.joinable())
         io_thread_.join();
 }
+
 
 bool WssClient::send(const std::string &msg) {
     if (!connected_) return false;

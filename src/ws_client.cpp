@@ -1,5 +1,4 @@
 #include "ws_client.hpp"
-#include <iostream>
 
 WsClient::WsClient()
     : resolver_(ioc_),
@@ -21,25 +20,58 @@ int WsClient::connect(const std::string &url, const std::string &token) {
     return 0;
 }
 
-void WsClient::do_connect() {
-    auto pos = last_url_.find(':');
-    auto host = last_url_.substr(0, pos);
-    auto port = last_url_.substr(pos + 1);
 
-    resolver_.async_resolve(host, port,
-        [this, host](auto ec, auto results) {
+ParsedUrl WsClient::parse_ws_url(const std::string &url, bool is_wss) {
+    ParsedUrl result;
+
+    std::string work = url;
+
+    // path
+    auto path_pos = work.find('/');
+    if (path_pos != std::string::npos) {
+        result.path = work.substr(path_pos);
+        work = work.substr(0, path_pos);
+    }
+    else {
+        result.path = "/";
+    }
+
+    // port
+    auto port_pos = work.find(':');
+    if (port_pos != std::string::npos) {
+        result.host = work.substr(0, port_pos);
+        result.port = work.substr(port_pos + 1);
+    }
+    else {
+        result.host = work;
+        result.port = is_wss ? "443" : "80";
+    }
+
+    return result;
+}
+
+
+void WsClient::do_connect() {
+    ParsedUrl parsed = parse_ws_url(last_url_, true);
+
+    // DNS resolve
+    resolver_.async_resolve(parsed.host, parsed.port,
+        [this, parsed](auto ec, auto results) {
             if (ec) return schedule_reconnect();
 
+            //TCP connect (SYN -> SYN-ACK -> ACK)
             asio::async_connect(ws_.next_layer(), results,
-                [this, host](auto ec, auto) {
+                [this, parsed](auto ec, auto) {
                     if (ec) return schedule_reconnect();
 
+                    // Adding http-headers (bearer, websocket-protocol)
                     ws_.set_option(websocket::stream_base::decorator(
                         [this](auto &req) {
                             req.set("Authorization", "Bearer " + last_token_);
                         }));
 
-                    ws_.async_handshake(host, "/",
+                    // WS handshake (HTTP GET, Upgrade)
+                    ws_.async_handshake(parsed.host, "/",
                         [this](auto ec) {
                             if (ec) return schedule_reconnect();
 
@@ -60,6 +92,8 @@ void WsClient::do_connect() {
         });
 }
 
+// Every 5 seconds check if connecton is alive
+// reconnect if not
 void WsClient::start_ping() {
     ping_timer_.expires_after(std::chrono::seconds(5));
     ping_timer_.async_wait([this](auto ec) {
@@ -78,6 +112,7 @@ void WsClient::start_ping() {
     });
 }
 
+// Reading frames, casting to string
 void WsClient::do_read() {
     auto buffer = std::make_shared<beast::flat_buffer>();
     ws_.async_read(*buffer,
@@ -91,6 +126,7 @@ void WsClient::do_read() {
         });
 }
 
+// Reconnect. Reset timers, wait delay then connect
 void WsClient::schedule_reconnect() {
     if (connected_) {
         connected_ = false;
